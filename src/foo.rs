@@ -1,8 +1,5 @@
 #![allow(unused)]
 
-mod funcs;
-use std::str::FromStr;
-
 // main.rs owns both outer_module and outer_module_2, it can see inside them
 // Can imagine it as an outer module encapsulating both modules
 // However, sibling modules can't access each other,
@@ -67,14 +64,4 @@ mod outer_module {
             name: String,
         }
     }
-}
-fn main() {
-    outer_module::print();
-    outer_module::nested_module::print_2();
-    outer_module_2::print();
-    let s = outer_module::nested_module::NestedModuleStruct {
-        id: 28,
-        name: "Rohan".to_string(),
-    };
-    println!("s = {:?}", s);
 }
