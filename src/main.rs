@@ -13,6 +13,11 @@ fn better_div(x: i32, y: i32) -> Result<i32, String> {
     }
 }
 
+// Note: Right now, Result and Option don't make a lot of sense.
+// Because how are they any different from creating our own enums, and handling them ourselves all the time??
+// Their use case becomes more evident, when we start using std library for handling results and options.
+// Functions like unwrap, expect, ?, ..., what rust provides out of the box, are the ones that make Result and Option more useful. 
+
 #[derive(Debug)]
 enum MathError {
     DivisionByZero,
