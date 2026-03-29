@@ -116,3 +116,105 @@ fn unwrap_and_expect_usage() {
     let v = x.expect("expect ka alag error message");
     println!("Result's expect usage:- {v}");
 }
+
+fn f1() -> Result<u32, String> {
+    println!("f1");
+    // Ok(1)
+    return Err("gande phatti".to_string());
+}
+
+// For anything to be returned by main function, it must implemetn Termination trait.
+// u32 doesn't implement it, => Result<u32, _> can't be returned from it.
+// This trait decides the exit status code using the output of the main function.
+
+fn question_operator_usage() -> Result<(), String> {
+    // Question operator
+    // A bit different from unwrap and expect
+    // unwrap/expect - if ok/some, get the internal value
+    // If not, panic
+    // ? - ok/some behaviour same, but for Err/None, it returns Err, instead of panicking
+    // Which is why this can be thought of as something to bubble up the error.
+
+    // let res = f1();
+    // let ans: Result<u32, String> = match res {
+    //     Ok(val) => Ok(val),
+    //     Err(err) => return Err(err),
+    // };
+
+    // Ok(())
+
+    // ? operator does what's done above
+    // Its not even doing something error specific like panic or anything.
+    // Just printing the error
+
+    let res = f1()?;
+    println!("res={res}");
+    Ok(())
+}
+
+fn f2() -> Result<u32, String> {
+    println!("f2");
+    return Ok(2);
+}
+
+fn f3() -> Result<u32, bool> {
+    println!("f3");
+    Ok(3)
+}
+
+fn f_match() -> Result<u32, String> {
+    let res_1 = f1();
+    let res_2 = f2();
+
+    let x_1 = match res_1 {
+        Ok(v) => v,
+        Err(err) => return Err(err),
+    };
+
+    let x_2 = match res_2 {
+        Ok(v) => v,
+        Err(err) => return Err(err),
+    };
+
+    return Ok(x_1 + x_2);
+    // Could also be written like down below
+    // But because we want to exemplify using ?, we do it as above
+    // match res_1 {
+    //     Ok(res_1) => match res_2 {
+    //         Ok(res_2) => return Ok(res_1 + res_2),
+    //         Err(err) => return Err(err),
+    //     },
+    //     Err(err) => return Err(err),
+    // }
+}
+
+// Re-writing the above function with question operator
+// But this works only when ? returns same error type, or error types are interconvertible
+// This is exemplified in the function after this function
+fn f_match_question_operator() -> Result<u32, String> {
+    let x_1 = f1()?;
+    let x_2 = f2()?;
+    return Ok(x_1 + x_2);
+}
+
+fn f_match_question_operator_new() -> Result<u32, String> {
+    let x_1 = f1()?;
+    let x_2 = f2()?;
+    // This gives error
+    // Because boolean type can't be converted to a String automatically
+    // let x_3 = f3()?;
+    // One way to fix this is to return String and not bool
+    // Another way is to pattern match
+    let x_3 = match f3() {
+        Ok(v) => v,
+        Err(err) => return Err("string error for f3".to_string()),
+    };
+    return Ok(x_1 + x_2 + x_3);
+}
+
+fn main_2() {
+    let z = match f_match_question_operator() {
+        Ok(val) => println!("value is {val}"),
+        Err(err) => println!("Error hai: {err}"),
+    };
+}
