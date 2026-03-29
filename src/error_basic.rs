@@ -16,7 +16,7 @@ fn better_div(x: i32, y: i32) -> Result<i32, String> {
 // Note: Right now, Result and Option don't make a lot of sense.
 // Because how are they any different from creating our own enums, and handling them ourselves all the time??
 // Their use case becomes more evident, when we start using std library for handling results and options.
-// Functions like unwrap, expect, ?, ..., what rust provides out of the box, are the ones that make Result and Option more useful. 
+// Functions like unwrap, expect, ?, ..., what rust provides out of the box, are the ones that make Result and Option more useful.
 
 #[derive(Debug)]
 enum MathError {
@@ -58,4 +58,61 @@ fn error() {
         Ok(val) => println!("result = {val}"),
         Err(err) => println!("Error = {err:?}"),
     }
+}
+
+fn unwrap_and_expect_usage() {
+    // Unwrap and expect for Option -------------------------------
+
+    // Unwrap
+    /*
+        // Unwrap is equivalent to this
+        let value = match x {
+            Some(value) => value,
+            None => panic!()
+        }
+    */
+
+    let x = Some(32);
+    // This panics
+    // let x: Option<i32> = None;
+    let value = x.unwrap();
+    println!("value is {value}");
+
+    // Expect
+    // Same as unwrap, only now the panic comes with a message
+    /*
+        // Expect is equivalent to this
+        let value = match x {
+            Some(value) => value,
+            None => panic!("Expect ka message")
+        }
+    */
+
+    // This panics
+    // let x: Option<i32> = None;
+    let value = x.expect("Expect ka message");
+    println!("value is {value}");
+
+    // Unwrap and Expect for Result --------------------------------
+
+    // Unwrap
+
+    // unwrap for option doesn't print any error because for option the other thing is just None
+    // But for result, it is Err(some message here)
+    // So with unwrap, that message from Err gets printed
+    let x: Result<i32, String> = Err("fut gyi".to_string());
+    let v = x.clone().unwrap();
+    println!("value is {v}");
+    // The above statement is equivalent
+    // let v = match x {
+    //     Ok(val) => val,
+    //     Err(err) => panic!("error:- {:?}", err)
+    // };
+    // println!("value is {v}");
+
+    // Expect
+    // With this, we display both, Err's own message + expect's error string.
+
+    let v = x.expect("expect ka alag error message");
+    println!("Result's expect usage:- {v}");
 }
