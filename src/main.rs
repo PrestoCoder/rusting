@@ -57,7 +57,6 @@ impl std::fmt::Display for ParseError {
 
 fn main() {
     // If we were to use ? down below, would have to return dyn err from main too
-    // Result<(), Box<(dyn std::error::Error + 'static)>>  to be exact
     let z = f3();
     println!("z = {:?}", z);
 }
