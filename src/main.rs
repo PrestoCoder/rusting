@@ -1,92 +1,119 @@
-#![allow(unused)]
-
-// Mutabitlity
-fn mutability() {
-    // In rust, binding is analogous to variable in other languages
-    // Binding can be thought of as, for x = 3, x is bound to the memory which holds 3.
-    let a = 1;
-
-    // Immutability for binding
-    /*
-        Immutability in binding means, 
-        1. The binding can't be bound to a different address, 
-        2. It can't be used directly(using the binding itself) or as a borrow (mutable borrow), to change the value its bound to
-        
-        For example:- (Stack)
-
-        let a = 2;
-        Now, a is the binding, that is bound to the memory address on the stack, which holds the value 2.
-        By definition, we can't do a = 3;, because that would try and create a new location in memory for storing the value 3, and bind a to that address
-        And the second point also, there is way for literals to be changed without the binding be mutable, so this is taken care of by itself. And obviously we can't do let b = &mut a, because binding 'a' is immutable
-
-        For example:- (Heap)
-
-        let s = String::from("abc");
-        Now, s is a binding to the String struct that lives on the stack, which holds 
-        {
-            Address of heap where string bytes are stored,
-            string metadata: {length of the string, capacity of the string}
-        }
-        
-        According         
-
-     */
-    // s is bound to the string struct on the stack
-    // That struct is a fat pointer, which has the actual heap address where the bytes of the string are present
-    // It also has the capacity and length of the string
-
-    // This means that s binding is immutable, which means that it can be bound to a different String struct
-    // It also means that either s, or any borrow of it, can't be used to mutate the value of the String it points to.
-    // Put simply, s can't be changed or used to change.
-    // let s = String::from("abc");
-
-    // This implies, the below fail
-    // In place fails
-    // s.push_str("abc");
-
-    // This fails -> s can't be bound to a new address (because the below creates a new string on heap, which in turn gets address stored on stack)
-    // s = String::from("abcc");
-
-    // This also - because s is immutable, we shouldn't be able to borrow it mutably
-    // let s2 = &mut s;
-
-    // However, this is possible
-    // let mut s3 = &s;
-
-    // What does this mean,
-    // This means, unlike above, when s3 binding is immutable, which means below should fail (it can't be bound to a different address on stack)
-    // let s3 = &s;
-    let s_1 = String::from("abc");
-    // s3 = &s_1;
-}
-
 fn main() {
-    // Borrow in effect is exactly like a pointer in c++
-    // Also, unless specified explicitly, it is stored on the stack
-    // Creates a reference
-    // Doesn't move ownership
-    let s = String::from("rust");
-    let s1 = &s;
-    let s2 = &s;
-    // Above are immutable, read only borrows.
-    // Because they aren't mut, they can't be used to mutate
+    // =========================================================================
+    // SETUP
+    // =========================================================================
+    // Heap-allocated value (String stores ptr+len+cap on stack, bytes on heap)
+    let mut s1 = String::from("hello"); // stack: [ptr|5|5] -> heap: [h,e,l,l,o]
+    let mut s2 = String::from("world"); // stack: [ptr|5|5] -> heap: [w,o,r,l,d]
 
-    // Immutable borrow -----------------
-    let s = String::from("rust");
-    let s1 = &s;
+    // Stack-only value (i32 is Copy, lives entirely on the stack, no heap)
+    let mut n1: i32 = 10; // stack: [10]
+    let mut n2: i32 = 20; // stack: [20]
 
-    // We can have any number of read-only access to a value (immutable borrow)
-    // Below array has &s as each of its 10 elements
-    let mut borrow_arr: [&String; 10] = [&s; 10];
+    // =========================================================================
+    // CASE 1: let b = &val  (immutable binding + shared ref)
+    //
+    // b is fixed to this reference. the reference is read-only.
+    // nothing can change through b. fully locked.
+    // =========================================================================
+    {
+        let b = &s1;
+        // b = &s2;           // ERROR: b is not mut, can't rebind
+        // b.push_str("!");   // ERROR: &String has no mutation rights
+        println!("1a: {}", b); // "hello" — read only
 
-    // Because pointer is on stack, "=" copies the value
-    let s3 = s2;
-    println!("{s2}");
+        let b = &n1;
+        // b = &n2;           // ERROR: can't rebind
+        // *b = 99;           // ERROR: can't write through shared ref
+        println!("1b: {}", b); // 10 — read only
+    }
 
-    // Mutable borrow ---------------
-    // write access
-    // Can only be provided if the original binding is mutable
-    let mut s = String::from("abc");
-    let s1 = &mut s;
-    s1.push_str("balle balle");
+    // =========================================================================
+    // CASE 2: let b = &mut val  (immutable binding + mutable ref)
+    //
+    // b is fixed — can't rebind it to a different reference.
+    // BUT the reference itself carries write permission to the target.
+    //
+    // the binding's immutability only governs "can b point elsewhere?"
+    // the &mut governs "can b modify what it points to?"
+    // these are two independent axes.
+    // =========================================================================
+    {
+        let b = &mut s1;
+        // b = &mut s2;       // ERROR: b is not mut, can't rebind
+        b.push_str("!");      // OK: &mut String permits mutation of the heap bytes
+        println!("2a: {}", b); // "hello!" — mutated through b
+
+        let b = &mut n1;
+        // b = &mut n2;       // ERROR: can't rebind
+        *b += 1;              // OK: &mut i32 permits writing the stack slot directly
+        println!("2b: {}", b); // 11 — mutated the i32 in place on the stack
+    }
+
+    // =========================================================================
+    // CASE 3: let mut b = &val  (mutable binding + shared ref)
+    //
+    // b can be rebound to point at a different value.
+    // BUT the reference is shared (&), so no mutation of the target.
+    //
+    // you can swap which thing you're looking at,
+    // but you can't change any of them.
+    // =========================================================================
+    {
+        let mut b = &s1;
+        println!("3a: {}", b); // "hello!" (still mutated from case 2)
+        // b.push_str("x");   // ERROR: & doesn't grant write access
+        b = &s2;               // OK: mut binding, can rebind
+        println!("3a: {}", b); // "world"
+
+        let mut b = &n1;
+        println!("3b: {}", b); // 11
+        // *b = 99;            // ERROR: can't write through &
+        b = &n2;               // OK: rebind
+        println!("3b: {}", b); // 20
+    }
+
+    // =========================================================================
+    // CASE 4: let mut b = &mut val  (mutable binding + mutable ref)
+    //
+    // full access. b can be rebound, AND it can mutate the target.
+    // =========================================================================
+    {
+        let mut b = &mut s1;
+        b.push_str("!");       // OK: &mut grants write access -> heap bytes change
+        println!("4a: {}", b); // "hello!!" — second mutation
+        b = &mut s2;           // OK: mut binding, rebind to s2
+        b.push_str("!");       // OK: now mutating s2's heap bytes
+        println!("4a: {}", b); // "world!"
+
+        let mut b = &mut n1;
+        *b += 100;             // OK: overwrite the i32 on the stack (11 -> 111)
+        println!("4b: {}", b); // 111
+        b = &mut n2;           // OK: rebind
+        *b += 100;             // OK: overwrite n2 on the stack (20 -> 120)
+        println!("4b: {}", b); // 120
+    }
+
+    // =========================================================================
+    // FINAL STATE — proof that mutations went through to the originals
+    // =========================================================================
+    println!("\nfinal s1: {}", s1); // "hello!!" — mutated twice via refs
+    println!("final s2: {}", s2);   // "world!"  — mutated once via ref
+    println!("final n1: {}", n1);   // 111       — mutated twice via refs
+    println!("final n2: {}", n2);   // 120       — mutated once via ref
+
+    // =========================================================================
+    // SUMMARY
+    // =========================================================================
+    // let     b = &    val  →  can't rebind b, can't mutate val
+    // let     b = &mut val  →  can't rebind b, CAN  mutate val
+    // let mut b = &    val  →  CAN  rebind b,  can't mutate val
+    // let mut b = &mut val  →  CAN  rebind b,  CAN  mutate val
+    //
+    // "let mut" controls the BINDING  (can b point elsewhere?)
+    // "&mut"    controls the REFERENCE (can b write to the target?)
+    //
+    // for stack values (i32):  mutation overwrites the stack slot directly
+    // for heap values (String): mutation modifies the heap allocation
+    //                           (the stack metadata ptr/len/cap may update too)
 }
