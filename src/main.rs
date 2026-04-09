@@ -2,10 +2,35 @@
 
 // Mutabitlity
 fn mutability() {
-    // binding immutable
-    // a is binding, its bound to value 1 on stack
-    // binding immutable means, a can't be bound to another value
+    // In rust, binding is analogous to variable in other languages
+    // Binding can be thought of as, for x = 3, x is bound to the memory which holds 3.
     let a = 1;
+
+    // Immutability for binding
+    /*
+        Immutability in binding means, 
+        1. The binding can't be bound to a different address, 
+        2. It can't be used directly(using the binding itself) or as a borrow (mutable borrow), to change the value its bound to
+        
+        For example:- (Stack)
+
+        let a = 2;
+        Now, a is the binding, that is bound to the memory address on the stack, which holds the value 2.
+        By definition, we can't do a = 3;, because that would try and create a new location in memory for storing the value 3, and bind a to that address
+        And the second point also, there is way for literals to be changed without the binding be mutable, so this is taken care of by itself. And obviously we can't do let b = &mut a, because binding 'a' is immutable
+
+        For example:- (Heap)
+
+        let s = String::from("abc");
+        Now, s is a binding to the String struct that lives on the stack, which holds 
+        {
+            Address of heap where string bytes are stored,
+            string metadata: {length of the string, capacity of the string}
+        }
+        
+        According         
+
+     */
     // s is bound to the string struct on the stack
     // That struct is a fat pointer, which has the actual heap address where the bytes of the string are present
     // It also has the capacity and length of the string
