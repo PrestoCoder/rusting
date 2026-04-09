@@ -116,4 +116,66 @@ fn main() {
     // for stack values (i32):  mutation overwrites the stack slot directly
     // for heap values (String): mutation modifies the heap allocation
     //                           (the stack metadata ptr/len/cap may update too)
+    
+
+// =========================================================================
+    // RULE 1: Only ONE &mut at a time
+    //
+    // Why? If two &mut refs existed simultaneously, both could write to
+    // the same memory — data race. Rust prevents this at compile time.
+    // =========================================================================
+    let mut s1 = String::from("abc");
+
+    let r1 = &mut s1; // r1 gets exclusive write access to s1
+    // let r2 = &mut s1; // ERROR: s1 is already mutably borrowed by r1
+    //                    // two simultaneous writers = potential data race
+
+    r1.push_str("!"); // r1 is the sole writer, safe
+    println!("{r1}");  // "abc!" — last use of r1, borrow ends here (NLL)
+
+    let r2 = &mut s1;  // OK now: r1 is no longer active
+    r2.push_str("!");
+    println!("{r2}");   // "abc!!"
+
+    // =========================================================================
+    // RULE 2: Can't mix &mut and & at the same time
+    //
+    // A shared ref (&) promises the value won't change while being read.
+    // A mutable ref (&mut) could change it. Allowing both breaks that
+    // promise — a reader could see partially-written data mid-mutation.
+    //
+    // The rule: any number of &, OR exactly one &mut. Never both.
+    // =========================================================================
+    let mut s2 = String::from("s2");
+
+    let r1 = &s2; // shared borrow — s2 promised stable while r1 lives
+    // let r2 = &mut s2; // ERROR: can't mutably borrow while shared ref exists
+    //                    // r2 could mutate s2 while r1 is reading it
+
+    println!("{r1}"); // last use of r1, shared borrow ends (NLL)
+
+    let r2 = &mut s2; // OK now: no active shared refs
+    r2.push_str("!");
+    println!("{r2}");  // "s2!"
+
+    // =========================================================================
+    // RULE 3: A reference must not outlive the value it points to
+    //
+    // If the value is dropped while a reference exists, that reference
+    // becomes a dangling pointer — pointing to freed memory. Reading
+    // it would be use-after-free (undefined behavior).
+    // =========================================================================
+    let y: &String;
+
+    // {
+    //     let x = String::from("asdf"); // x lives in this inner scope
+    //                                    // stack: [ptr|4|4] -> heap: [a,s,d,f]
+    //     y = &x;
+    // } // x dropped here — heap freed, stack reclaimed
+    //   // y now points to freed memory = dangling pointer
+    //
+    // std::mem::drop(x) would do the same: moves ownership, triggers
+    // drop, frees the heap bytes — y left dangling.
+    //
+    // println!("{y}"); // ERROR: x does not live long enough
 }
